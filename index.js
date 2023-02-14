@@ -23,11 +23,28 @@ async function run(){
         const emaJhonProducts = client.db('EmaJhon').collection('products')
         const emaJhonOrders = client.db('EmaJhon').collection('orders')
         app.get('/products', async(req, res)=>{
-            const query = {};
+            const page = parseInt(req.query.page);
+            const category = req.query.category;
+            let query = {};
+            if(category !== 'All'){
+                query = {category};
+            }
             const cursor = emaJhonProducts.find(query);
-            const products = await cursor.toArray()
-            res.send(products)
+            const products = await cursor.skip(page * 16).limit(16).toArray()
+            const count = await emaJhonProducts.estimatedDocumentCount()
+            res.send({count,products})
         })
+        app.get('/products/:category', async(req, res)=>{
+            const category = req.params.category;
+            let query = {category};
+            if(category === 'All'){
+                query = {};
+            }
+            const cursor = emaJhonProducts.find(query)
+            const categoryItem = await cursor.toArray()
+            res.send(categoryItem)
+        })
+        
         app.post('/orders', async(req, res)=>{
             const order = req.body;
             const result =await emaJhonOrders.insertOne(order)
